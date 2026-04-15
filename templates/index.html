@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Sécurité Wi-Fi</title>
+    <style>
+        /* Couleurs et styles issus du design professionnel */
+        :root {
+            --bg-color: #f4f7f9;
+            --card-bg: #ffffff;
+            --text-main: #2d3436;
+            --text-secondary: #636e72;
+            --primary: #0984e3;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #d63031;
+            --border: #dfe6e9;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .stats-badge {
+            background: var(--primary);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+
+        .scan-btn {
+            margin-top: 25px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .scan-btn:hover {
+            transform: translateY(-2px);
+            background: #0773c5;
+        }
+
+        .section-title {
+            margin: 50px 0 10px;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .section-desc {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            transition: transform 0.3s;
+        }
+
+        .card:hover { transform: translateY(-5px); }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .wifi-icon, .rank-badge {
+            font-size: 24px;
+            margin-right: 12px;
+        }
+
+        .ssid-name { font-weight: 700; }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .label { color: var(--text-secondary); }
+        .value { font-weight: 600; }
+
+        /* Couleurs dynamiques basées sur l'audit */
+        .status-green { color: var(--success); }
+        .status-blue { color: var(--primary); }
+        .status-orange { color: var(--warning); }
+        .status-red { color: var(--danger); }
+
+        .progress-bg {
+            background: #eee;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-fill { height: 100%; transition: width 0.8s ease-in-out; }
+
+        .score-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .score-number { font-weight: 800; font-size: 1.1em; }
+
+        .result-pill {
+            padding: 3px 10px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            font-weight: 700;
+        }
+
+        .bg-green { background: rgba(0,184,148,0.1); color: var(--success); }
+        .bg-orange { background: rgba(253,203,110,0.1); color: #d68910; }
+        .bg-red { background: rgba(214,48,49,0.1); color: var(--danger); }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>Audit de Sécurité Wi-Fi Mobile</h1>
+        {% if scanned %}
+            <span class="stats-badge">{{ reseaux|length }} Réseaux à proximité</span>
+        {% endif %}
+
+        <form method="POST">
+            <button type="submit" class="scan-btn">🔍 Analyser les réseaux</button>
+        </form>
+    </header>
+
+    {% if scanned %}
+        {% if top3 %}
+        <div class="section-title">🏆 Top des Réseaux Sécurisés</div>
+        <div class="section-desc">Les points d'accès les plus fiables selon l'algorithme d'audit.</div>
+
+        <div class="grid">
+            {% for r in top3 %}
+            <div class="card" style="border-top: 4px solid {% if loop.index == 1 %}#ffd700{% elif loop.index == 2 %}#c0c0c0{% else %}#cd7f32{% endif %};">
+                <div class="card-header">
+                    <span class="rank-badge">
+                        {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% else %}🥉{% endif %}
+                    </span>
+                    <span class="ssid-name">{{ r.nom if r.nom else 'Réseau masqué' }}</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="label">Sécurité</span>
+                    <span class="value status-{{ r.auth_color }}">{{ r.niveau_auth }}</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="label">Fiabilité</span>
+                    <span class="value">{{ r.score }}/100</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="label">Stabilité</span>
+                    <span class="value {% if r.stabilite == 'Bonne' %}status-green{% elif r.stabilite == 'Moyenne' %}status-orange{% else %}status-red{% endif %}">
+                        {{ r.stabilite }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="section-title">📡 Diagnostic Complet</div>
+        <div class="section-desc">Analyse détaillée du signal, du chiffrement et du risque.</div>
+
+        <div class="grid">
+            {% for r in reseaux %}
+            <div class="card">
+                <div class="card-header">
+                    <span class="wifi-icon">📶</span>
+                    <span class="ssid-name">{{ r.nom if r.nom else 'Réseau masqué' }}</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="label">Chiffrement</span>
+                    <span class="value status-{{ r.auth_color }}">{{ r.niveau_auth }}</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="label">Réseau ouvert</span>
+                    <span class="value {% if r.ouvert %}status-red{% else %}status-green{% endif %}">
+                        {% if r.ouvert %}OUI{% else %}NON{% endif %}
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="label">Signal</span>
+                    <span class="value">{{ r.signal }}% ({{ r.signal_niveau }})</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="label">Stabilité</span>
+                    <span class="value {% if r.stabilite == 'Bonne' %}status-green{% elif r.stabilite == 'Moyenne' %}status-orange{% else %}status-red{% endif %}">
+                        {{ r.stabilite }}
+                    </span>
+                </div>
+
+                <div class="progress-bg">
+                    <div class="progress-fill" style="width: {{ r.score }}%; background-color: 
+                        {% if r.score >= 70 %}var(--success)
+                        {% elif r.score >= 40 %}var(--warning)
+                        {% else %}var(--danger){% endif %};">
+                    </div>
+                </div>
+
+                <div class="score-footer">
+                    <span class="score-number" style="color: 
+                        {% if r.score >= 70 %}var(--success)
+                        {% elif r.score >= 40 %}var(--warning)
+                        {% else %}var(--danger){% endif %};">
+                        {{ r.score }}/100
+                    </span>
+                    <span class="result-pill {% if r.score >= 70 %}bg-green{% elif r.score >= 40 %}bg-orange{% else %}bg-red{% endif %}">
+                        {{ r.resultat }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    {% else %}
+        <div class="empty-state">
+            <div style="font-size: 50px; margin-bottom: 20px;">🔎</div>
+            <h2>Lancement de l'audit</h2>
+            <p>Appuyez sur le bouton ci-dessus pour scanner l'environnement Wi-Fi.<br>L'analyse inclut le chiffrement, la stabilité (ping) et le signal.</p>
+        </div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>
